@@ -1,0 +1,1 @@
+console.log('hypercore p2p protocol');

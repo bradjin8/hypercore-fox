@@ -1,0 +1,57 @@
+{
+  "author": "The New Internet",
+  "description": "Makes the hyper:// protocol available",
+  "manifest_version": 2,
+  "name": "Hyper P2P Protocol",
+  "version": "0.1.8",
+  "applications": {
+    "gecko": {
+      "id": "dat@thenewnet.com",
+      "strict_min_version": "58.0"
+    }
+  },
+  "icons": {
+    "48": "assets/dat-hexagon.svg"
+  },
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "permissions": [
+    "proxy",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>",
+    "storage",
+    "nativeMessaging"
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "hyper",
+      "name": "Hypercore",
+      "uriTemplate": "http://localhost:8338/hyper/%s"
+    }
+  ],
+  "page_action": {
+    "browser_style": true,
+    "default_title": "Hyper",
+    "default_icon": "assets/dat-hexagon.svg"
+  },
+  "options_ui": {
+    "page": "pages/options.html",
+    "browser_style": false
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:8338/*"
+      ],
+      "js": [
+        "content_script.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}
