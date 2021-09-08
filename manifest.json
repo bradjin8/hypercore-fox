@@ -15,8 +15,36 @@
   },
   "background": {
     "scripts": [
+      "libs/jquery.3.5.1.min.js",
+      "libs/axios.min.js",
       "background.js"
     ]
+  },
+  "browser_action": {
+    "default_icon": "assets/dat-hexagon.svg",
+    "default_title": "hypercore-helper",
+    "default_popup": "popup/menu.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:8338/*"
+      ],
+      "js": [
+        "content_script.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "content_security_policy": "script-src 'self'; object-src 'self'",
+  "options_ui": {
+    "page": "pages/options.html",
+    "browser_style": false
+  },
+  "page_action": {
+    "browser_style": true,
+    "default_title": "Hyper",
+    "default_icon": "assets/dat-hexagon.svg"
   },
   "permissions": [
     "proxy",
@@ -32,26 +60,6 @@
       "protocol": "hyper",
       "name": "Hypercore",
       "uriTemplate": "http://localhost:8338/hyper/%s"
-    }
-  ],
-  "page_action": {
-    "browser_style": true,
-    "default_title": "Hyper",
-    "default_icon": "assets/dat-hexagon.svg"
-  },
-  "options_ui": {
-    "page": "pages/options.html",
-    "browser_style": false
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "http://localhost:8338/*"
-      ],
-      "js": [
-        "content_script.js"
-      ],
-      "run_at": "document_start"
     }
   ]
 }
