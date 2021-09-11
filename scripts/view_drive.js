@@ -333,6 +333,7 @@ $(document).ready(async function () {
       height: function () {
         return window.innerHeight * 0.8
       },
+      maxHeight: 700,
       closeOnOutsideClick: false,
       onContentReady: function (e) {
         var $contentElement = e.component.content();
@@ -346,7 +347,7 @@ $(document).ready(async function () {
 
     let content_html = `<textarea id="editor">${content}</textarea>`
     if (!readOnly) {
-      content_html += `<div id="editor-save">Save</div><div id="editor-cancel">Cancel</div>`
+      content_html += `<div class="editor-controls"><div id="editor-save">Save</div><div id="editor-cancel">Cancel</div></div>`;// + content_html
     }
     let popupOption = {
       "title": name,
@@ -366,7 +367,8 @@ $(document).ready(async function () {
       let cmOptions = {
         lineNumbers: true,
         // value: content,
-        readOnly: readOnly
+        readOnly: readOnly,
+        viewportMargin: Infinity,
       }
       if (mode) {
         cmOptions.mode = mode
@@ -392,6 +394,15 @@ $(document).ready(async function () {
           }
           popup.hide()
           myCodeMirror.toTextArea()
+        }
+      })
+      $('#editor-cancel').dxButton({
+        stylingMode: 'contained',
+        type: 'danger',
+        width: 120,
+        height: 30,
+        onClick: async function () {
+          popup.hide()
         }
       })
     })
