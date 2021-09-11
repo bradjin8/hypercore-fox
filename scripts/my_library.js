@@ -46,7 +46,7 @@ $(function () {
         return `<div>`
           + `<div class="item-name">${data.name}</div>`
           + `<div class="item-actions">`
-          + `<a class="btn-visit" href="http://localhost:8338/hyper/${data.url}" target="_blank">Visit</a>`
+          + `<a class="btn-visit" href="${data.url}" target="_blank">Visit</a>`
           + `<a class="btn-manage" href="/view.html?name=${data.name}">Manage</a>`
           + `<div class="btn-delete" data-drive-name="${data.name}">Remove</div>`
           + `</div>`

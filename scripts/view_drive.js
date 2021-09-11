@@ -3,13 +3,18 @@ const MESSAGE = {
   READ_DRIVE_FILE: 'READ_DRIVE_FILE',
   CREATE_FILE: 'CREATE_FILE',
   DELETE_FILE: 'DELETE_FILE',
-  UPDATE_FILE: 'UPDATE_FILE'
+  UPDATE_FILE: 'UPDATE_FILE',
+  UPLOAD_FILE: 'UPLOAD_FILE',
+  CREATE_DRIVE_DIR: 'CREATE_DRIVE_DIR',
+  DELETE_DRIVE_DIR: 'DELETE_DRIVE_DIR'
 }
 
 const LABEL = {
   CREATE_FILE: "Create a new file",
   EDIT_FILE: "Edit as text editor"
 }
+
+const ImageExtensions = ['bmp', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'tiff']
 
 const MODE = {
   js: "javascript",
@@ -20,6 +25,8 @@ const MODE = {
   html: "text/html",
   php: "php"
 }
+
+let key;
 
 async function loadDrive(name, path = "/") {
   return new Promise(async resolve => {
@@ -32,6 +39,9 @@ async function loadDrive(name, path = "/") {
     )
     sending.then(res => {
       console.log('res-page', res)
+      if (res.success && res.key) {
+        key = res.key
+      }
       resolve(res);
     }, error => {
       console.log('err-page', error)
@@ -98,11 +108,69 @@ async function updateFile(name, path, data) {
   })
 }
 
+async function uploadFile(name, path, data) {
+  return new Promise(async resolve => {
+    let sending = browser.runtime.sendMessage(
+      {
+        type: MESSAGE.UPLOAD_FILE,
+        name,
+        path,
+        data
+      }
+    )
+    sending.then(res => {
+      console.log('res-page', res)
+      resolve(res);
+    }, error => {
+      console.log('err-page', error)
+      resolve(null)
+    })
+  })
+}
+
 async function deleteFile(name, path) {
   return new Promise(async resolve => {
     let sending = browser.runtime.sendMessage(
       {
         type: MESSAGE.DELETE_FILE,
+        name,
+        path
+      }
+    )
+    sending.then(res => {
+      console.log('res-page', res)
+      resolve(res);
+    }, error => {
+      console.log('err-page', error)
+      resolve(null)
+    })
+  })
+}
+
+async function deleteDir(name, path) {
+  return new Promise(async resolve => {
+    let sending = browser.runtime.sendMessage(
+      {
+        type: MESSAGE.DELETE_DRIVE_DIR,
+        name,
+        path
+      }
+    )
+    sending.then(res => {
+      console.log('res-page', res)
+      resolve(res);
+    }, error => {
+      console.log('err-page', error)
+      resolve(null)
+    })
+  })
+}
+
+async function createDir(name, path) {
+  return new Promise(async resolve => {
+    let sending = browser.runtime.sendMessage(
+      {
+        type: MESSAGE.CREATE_DRIVE_DIR,
         name,
         path
       }
@@ -132,9 +200,9 @@ $(document).ready(async function () {
 
   let provider = new DevExpress.fileManagement.CustomFileSystemProvider({
     getItems: getItems,
-    createDirectory: async (parentDir, name) => {
-    },
-    deleteItem: deleteItem
+    createDirectory: createDirectory,
+    deleteItem: deleteItem,
+    uploadFileChunk: uploadItems
   })
 
   let fileManager = $("#file-manager").dxFileManager({
@@ -144,12 +212,12 @@ $(document).ready(async function () {
     fileSystemProvider: provider,
     currentPath: "Widescreen",
     permissions: {
-      // create: true,
+      create: true,
       // copy: true,
       // move: true,
       delete: true,
       // rename: true,
-      // upload: true,
+      upload: true,
       // download: true
     },
     itemView: {
@@ -158,13 +226,6 @@ $(document).ready(async function () {
           "thumbnail",
           "name",
           "size",
-          // {
-          //   dataField: "dateCreated",
-          //   dataType: "date",
-          //   caption: "Created Date",
-          //   alignment: 'right',
-          //   width: 150,
-          // },
           {
             dataField: "dateModified",
             dataType: "date",
@@ -183,6 +244,7 @@ $(document).ready(async function () {
           visible: true
         },
         "separator",
+        "create",
         {
           widget: "dxMenu",
           location: "before",
@@ -196,6 +258,7 @@ $(document).ready(async function () {
             onItemClick: onItemClick
           }
         },
+        "upload",
         // "refresh",
         {
           name: "separator",
@@ -204,8 +267,8 @@ $(document).ready(async function () {
         "switchView"
       ],
       fileSelectionItems: [
-        "rename", "separator", "delete", "separator",
-        "refresh", "clearSelection"
+        "separator", "delete", "separator",
+        "clearSelection"
       ]
     },
     onSelectedFileOpened: onSelectedFileOpened,
@@ -217,6 +280,7 @@ $(document).ready(async function () {
           text: LABEL.CREATE_FILE,
           icon: "plus",
         },
+        "upload",
         {
           text: LABEL.EDIT_FILE,
           icon: "edit"
@@ -228,6 +292,10 @@ $(document).ready(async function () {
         "delete",
         "refresh"
       ]
+    },
+    upload: {
+      chunkSize: 200000,
+      maxFileSize: 1024 * 1024 * 1024
     }
   }).dxFileManager("instance");
 
@@ -297,64 +365,86 @@ $(document).ready(async function () {
   }
 
   async function deleteItem(item) {
-    console.log('pathInfo', item)
+    console.log('delete-item', item)
 
-    let res = await deleteFile(document.title, item.path);
+    let res = item.isDirectory ? await deleteDir(document.title, item.path) : await deleteFile(document.title, item.path);
     console.log('deleteItem', res)
     if (res && res.success)
       fileManager.refresh()
   }
 
-  async function onSelectedFileOpened(e) {
-    let filePath = fileManager.getCurrentDirectory().parentPath + "/" + e.file.path
-    console.log('file', filePath)
+  async function createDirectory(parentDir, name) {
+    console.log('create-directory', parentDir.path, name)
+    let res = await createDir(document.title, parentDir.path + "/" + name)
+    console.log('create-directory-res', res)
+    if (res && res.success) {
+      fileManager.refresh()
+    }
+  }
 
-    await openEditPopup(e.file.name, filePath, true)
+  async function onSelectedFileOpened(e) {
+    let dir = fileManager.getCurrentDirectory().path
+    console.log('file', dir)
+
+    await openEditPopup(e.file.name, dir, true)
   }
 
   let myCodeMirror
 
-  async function openEditPopup(name, filePath, readOnly = false) {
-    let res = await readFile(document.title, filePath)
-    console.log('res', res)
-
-    let content
-    if (res) {
-      if (res.success) {
-        content = res.data
-      } else {
-        content = 'Can not load the file.'
-      }
-    } else {
-      content = 'File not found'
-    }
-
+  async function openEditPopup(name, directoryPath, readOnly = false) {
+    let filePath = directoryPath + "/" + name
+    let extension = name.lastIndexOf(".") > 0 ? name.substring(name.lastIndexOf(".") + 1).toLowerCase() : null
     let popup = $("#edit-popup").dxPopup({
       height: function () {
         return window.innerHeight * 0.8
       },
-      maxHeight: 700,
       closeOnOutsideClick: false,
       onContentReady: function (e) {
         var $contentElement = e.component.content();
-        $contentElement.addClass("photo-popup-content");
+        $contentElement.addClass("photo-popup-content")
       }
     }).dxPopup("instance")
 
-    let extension = name.lastIndexOf(".") > 0 ? name.substring(name.lastIndexOf(".") + 1) : null
     let mode = MODE[extension]
+    let isImage = ImageExtensions.includes(extension)
+    let content_html;
+    if (isImage && readOnly) {
+      let scroll_view = $('<div />')
+      scroll_view.append($('<img />', {
+        src: `http://localhost:8338/hyper/${key}/${directoryPath}/${encodeURIComponent(name)}`,
+        class: 'img-responsive'
+      }))
+      scroll_view.dxScrollView({
+        width: "100%",
+        height: "100%"
+      })
+      content_html = scroll_view
+    } else {
+      let res = await readFile(document.title, filePath)
+      // console.log('res', res)
 
+      let content
+      if (res) {
+        if (res.success) {
+          content = res.data
+        } else {
+          content = 'Can not load the file.'
+        }
+      } else {
+        content = 'File not found'
+      }
 
-    let content_html = `<textarea id="editor">${content}</textarea>`
-    if (!readOnly) {
-      content_html += `<div class="editor-controls"><div id="editor-save">Save</div><div id="editor-cancel">Cancel</div></div>`;// + content_html
+      content_html = `<textarea id="editor">${content}</textarea>`
+      if (!readOnly) {
+        content_html += `<div class="editor-controls"><div id="editor-save">Save</div><div id="editor-cancel">Cancel</div></div>`;// + content_html
+      }
     }
+
     let popupOption = {
       "title": name,
       "contentTemplate": content_html
     }
-    if (!readOnly) {
-    }
+
     popup.option(popupOption)
     popup.on('hidden', function () {
       popup.dispose()
@@ -362,6 +452,9 @@ $(document).ready(async function () {
         fileManager.refresh()
     })
     popup.on('contentReady', function () {
+      if (isImage && readOnly) {
+        return;
+      }
       console.log('cm', extension, mode, content)
       let editorElement = document.getElementById('editor')
       let cmOptions = {
@@ -407,5 +500,15 @@ $(document).ready(async function () {
       })
     })
     popup.show();
+  }
+
+  async function uploadItems(fileData, chunksInfo, destinationDir) {
+    console.log('upload-items', fileData, chunksInfo, destinationDir)
+    const filePath = destinationDir.path + "/" + fileData.name
+    // let res = await uploadFile(document.title, filePath, chunksInfo.chunkBlob)
+    let res = await uploadFile(document.title, filePath, fileData)
+    if (res && res.success) {
+      fileManager.refresh()
+    }
   }
 })
