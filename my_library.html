@@ -3,8 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <title>My Library</title>
+    <script src="libs/jquery.3.5.1.min.js"></script>
+    <link rel="dx-theme" data-theme="generic.light" data-active="true" type="text/css" href="libs/dxFile/dx.light.css"/>
+    <script src="libs/dxFile/dx.all.js"></script>
+    <style>
+        .dx-list-item-content > div {
+            padding: 5px;
+            font-size: 15px;
+        }
+
+        .options {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(191, 191, 191, 0.15);
+        }
+
+        .options .caption {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .option {
+            margin-top: 10px;
+        }
+
+        .option > span {
+            margin-right: 10px;
+        }
+
+        .option > .dx-selectbox {
+            display: inline-block;
+            vertical-align: middle;
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .item-name {
+            width: 50%;
+            display: inline-block;
+        }
+
+        .item-actions {
+            width: 50%;
+            display: inline-block;
+        }
+
+        a, a:active {
+            text-decoration: none;
+            margin-right: 20px;
+        }
+
+        .options {
+            display: none;
+        }
+    </style>
 </head>
-<body>
-Your drives here.
+<body class="dx-viewport">
+<div class="demo-container">
+    <div id="list"></div>
+    <div class="options">
+        <div class="caption">Options</div>
+        <div class="option">
+            <span>Search mode</span>
+            <div id="searchMode"></div>
+        </div>
+    </div>
+</div>
 </body>
+<script src="scripts/my_library.js"></script>
 </html>
